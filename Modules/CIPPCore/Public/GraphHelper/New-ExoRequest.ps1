@@ -139,14 +139,15 @@ function New-ExoRequest {
                         Method      = 'POST'
                         Body        = $ExoBody
                         Headers     = $Headers
-                        ContentType = 'application/json'
+                        ContentType = 'application/json; charset=utf-8'
                     }
 
-                    $Return = Invoke-RestMethod @ExoRequestParams
+                    $Return = Invoke-RestMethod @ExoRequestParams -ResponseHeadersVariable ResponseHeaders
                     $URL = $Return.'@odata.nextLink'
                     $Return
                 } until ($null -eq $URL)
 
+                Write-Verbose ($ResponseHeaders | ConvertTo-Json)
                 if ($ReturnedData.'@adminapi.warnings' -and $ReturnedData.value -eq $null) {
                     $ReturnedData.value = $ReturnedData.'@adminapi.warnings'
                 }
