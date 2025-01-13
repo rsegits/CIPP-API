@@ -66,9 +66,9 @@ function Get-GraphToken($tenantid, $scope, $AsApp, $AppID, $AppSecret, $refreshT
         if (!$Tenant.RowKey) {
             $donotset = $true
             $Tenant = [pscustomobject]@{
-                GraphErrorCount     = $null
-                LastGraphTokenError = $null
-                LastGraphError      = $null
+                GraphErrorCount     = 0
+                LastGraphTokenError = ''
+                LastGraphError      = ''
                 PartitionKey        = 'TenantFailed'
                 RowKey              = 'Failed'
             }
@@ -81,7 +81,7 @@ function Get-GraphToken($tenantid, $scope, $AsApp, $AppID, $AppSecret, $refreshT
         }
         $Tenant.GraphErrorCount++
 
-        if (!$donotset) { Update-AzDataTableEntity @TenantsTable -Entity $Tenant }
+        if (!$donotset) { Update-AzDataTableEntity -Force @TenantsTable -Entity $Tenant }
         throw "Could not get token: $($Tenant.LastGraphError)"
     }
 }
