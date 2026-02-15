@@ -42,7 +42,7 @@ function Invoke-CIPPOffboardingJob {
         }
         { $_.HideFromGAL -eq $true } {
             try {
-                Set-CIPPHideFromGAL -tenantFilter $TenantFilter -UserID $username -HideFromGAL $true -Headers $Headers -APIName $APIName
+                Set-CIPPHideFromGAL -tenantFilter $TenantFilter -UserID $username -hidefromgal $true -Headers $Headers -APIName $APIName
             } catch {
                 $_.Exception.Message
             }
@@ -151,28 +151,10 @@ function Invoke-CIPPOffboardingJob {
             }
         }
         { $_.removePermissions } {
-            if ($RunScheduled) {
-                Remove-CIPPMailboxPermissions -PermissionsLevel @('FullAccess', 'SendAs', 'SendOnBehalf') -userid 'AllUsers' -AccessUser $UserName -TenantFilter $TenantFilter -APIName $APINAME -Headers $Headers
-
-            } else {
-                $Queue = New-CippQueueEntry -Name "Offboarding - Mailbox Permissions: $Username" -TotalTasks 1
-                $InputObject = [PSCustomObject]@{
-                    Batch            = @(
-                        [PSCustomObject]@{
-                            'FunctionName' = 'ExecOffboardingMailboxPermissions'
-                            'TenantFilter' = $TenantFilter
-                            'User'         = $Username
-                            'Headers'      = $Headers
-                            'APINAME'      = $APINAME
-                            'QueueId'      = $Queue.RowKey
-                        }
-                    )
-                    OrchestratorName = "OffboardingMailboxPermissions_$Username"
-                    SkipLog          = $true
-                }
-                $null = Start-NewOrchestration -FunctionName CIPPOrchestrator -InputObject ($InputObject | ConvertTo-Json -Depth 10)
-                "Removal of permissions queued. This task will run in the background and send it's results to the logbook."
-            }
+            Remove-CIPPMailboxPermissions -AccessUser $Username -TenantFilter $TenantFilter -UseCache -APIName $APIName -Headers $Headers
+        }
+        { $_.removeCalendarPermissions } {
+            Remove-CIPPCalendarPermissions -UserToRemove $Username -TenantFilter $TenantFilter -UseCache -APIName $APIName -Headers $Headers
         }
         { $_.RemoveMFADevices -eq $true } {
             try {
@@ -191,7 +173,7 @@ function Invoke-CIPPOffboardingJob {
                 }
             } elseif ($User.onPremisesSyncEnabled -eq $true -and ![string]::IsNullOrEmpty($User.onPremisesImmutableId)) {
                 Write-LogMessage -Message "User $Username is synced from on-premises. Scheduling an Immutable ID clear for when the user account has been soft deleted." -TenantFilter $TenantFilter -Severity 'Error' -APIName $APIName -Headers $Headers
-
+                'Scheduling Immutable ID clear task for when the user account is no longer synced in the on-premises directory.'
                 $ScheduledTask = @{
                     TenantFilter  = $TenantFilter
                     Name          = "Clear Immutable ID: $Username"
