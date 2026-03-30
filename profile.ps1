@@ -2,6 +2,27 @@ Write-Information '#### CIPP-API Start ####'
 
 $Timings = @{}
 $TotalStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+
+# Test Proxyman CA certificate into trusted store if present (for local dev HTTPS inspection)
+$ProxymanCert = Join-Path $PSScriptRoot 'proxyman.pem'
+if (Test-Path $ProxymanCert) {
+    # Verify the cert is trusted in the system store
+    try {
+        $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($ProxymanCert)
+        $chain = [System.Security.Cryptography.X509Certificates.X509Chain]::new()
+        $chain.ChainPolicy.RevocationMode = [System.Security.Cryptography.X509Certificates.X509RevocationMode]::NoCheck
+        $trusted = $chain.Build($cert)
+        if ($trusted) {
+            Write-Information 'Proxyman CA certificate is trusted.'
+        } else {
+            $chainStatus = $chain.ChainStatus | ForEach-Object { $_.StatusInformation.Trim() }
+            Write-Warning "Proxyman CA certificate is NOT trusted: $($chainStatus -join '; ')"
+        }
+    } catch {
+        Write-Warning "Failed to verify Proxyman CA certificate trust: $($_.Exception.Message)"
+    }
+}
+
 # Only load Application Insights SDK for telemetry if a connection string or instrumentation key is set
 $hasAppInsights = $false
 if ($env:APPLICATIONINSIGHTS_CONNECTION_STRING -or $env:APPINSIGHTS_INSTRUMENTATIONKEY) {
@@ -96,8 +117,7 @@ $SwVersion = [System.Diagnostics.Stopwatch]::StartNew()
 $CurrentVersion = (Get-Content -Path (Join-Path $PSScriptRoot 'version_latest.txt') -Raw).Trim()
 $Table = Get-CippTable -tablename 'Version'
 Write-Information "Function App: $($env:WEBSITE_SITE_NAME) | API Version: $CurrentVersion | PS Version: $($PSVersionTable.PSVersion)"
-$global:CippVersion = $CurrentVersion
-$ENV:CurrentVersion = $CurrentVersion
+$env:CippVersion = $CurrentVersion
 
 $LastStartup = Get-CIPPAzDataTableEntity @Table -Filter "PartitionKey eq 'Version' and RowKey eq '$($env:WEBSITE_SITE_NAME)'"
 if (!$LastStartup -or $CurrentVersion -ne $LastStartup.Version) {
@@ -126,6 +146,11 @@ if (!$LastStartup -or $CurrentVersion -ne $LastStartup.Version) {
 }
 $SwVersion.Stop()
 $Timings['VersionCheck'] = $SwVersion.Elapsed.TotalMilliseconds
+
+if ($env:AzureWebJobsStorage -ne 'UseDevelopmentStorage=true' -and $env:NonLocalHostAzurite -ne 'true') {
+    Set-CIPPEnvVarBackup
+    Set-CIPPOffloadFunctionTriggers
+}
 
 $TotalStopwatch.Stop()
 $Timings['Total'] = $TotalStopwatch.Elapsed.TotalMilliseconds
