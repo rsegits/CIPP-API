@@ -86,6 +86,9 @@ function Invoke-AddJITAdminTemplate {
             defaultNotificationActions  = $Request.Body.defaultNotificationActions
             generateTAPByDefault        = [bool]$Request.Body.generateTAPByDefault
             reasonTemplate              = $Request.Body.reasonTemplate
+            defaultVacationMode         = [bool]$Request.Body.defaultVacationMode
+            defaultVacationCAPolicy     = $Request.Body.defaultVacationCAPolicy
+            defaultVacationExcludeAuditAlerts = [bool]$Request.Body.defaultVacationExcludeAuditAlerts
             createdBy                   = $UserDetails
             createdDate                 = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
         }
@@ -111,6 +114,9 @@ function Invoke-AddJITAdminTemplate {
             }
             if (![string]::IsNullOrWhiteSpace($Request.Body.defaultUserName)) {
                 $TemplateObject.defaultUserName = $Request.Body.defaultUserName
+            }
+            if ($Request.Body.defaultUsageLocation) {
+                $TemplateObject.defaultUsageLocation = $Request.Body.defaultUsageLocation.value ?? $Request.Body.defaultUsageLocation
             }
 
             # defaultDomain is only saved for specific tenant templates (not AllTenants)

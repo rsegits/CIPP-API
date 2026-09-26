@@ -23,10 +23,12 @@ function Set-CIPPDBCacheRiskyUsers {
         $RiskyUsers = New-GraphGetRequest -uri 'https://graph.microsoft.com/v1.0/identityProtection/riskyUsers' -tenantid $TenantFilter
 
         if ($RiskyUsers) {
-            Add-CIPPDbItem -TenantFilter $TenantFilter -Type 'RiskyUsers' -Data $RiskyUsers
-            Add-CIPPDbItem -TenantFilter $TenantFilter -Type 'RiskyUsers' -Data $RiskyUsers -Count
+            Add-CIPPDbItem -TenantFilter $TenantFilter -Type 'RiskyUsers' -Data $RiskyUsers -AddCount
             Write-LogMessage -API 'CIPPDBCache' -tenant $TenantFilter -message "Cached $($RiskyUsers.Count) risky users successfully" -sev Debug
         } else {
+            # The request succeeded with nothing returned: write the authoritative empty set so the
+            # Count marker records a completed collection and stale rows are cleared.
+            Add-CIPPDbItem -TenantFilter $TenantFilter -Type 'RiskyUsers' -Data @() -AddCount -ClearOnEmpty
             Write-LogMessage -API 'CIPPDBCache' -tenant $TenantFilter -message 'No risky users found or Identity Protection not available' -sev Debug
         }
 
