@@ -14,6 +14,7 @@ function Invoke-CippTestZTNA21814 {
     try {
         $PrivilegedRoles = Get-CippDbRole -TenantFilter $Tenant -IncludePrivilegedRoles
         $Users = Get-CIPPTestData -TenantFilter $Tenant -Type 'Users'
+        $UserById = [CIPP.CippIndex]::Build($Users, @(foreach ($U in $Users) { , ($($U.id) ?? $null) }))
 
         $RoleData = [System.Collections.Generic.List[object]]::new()
 
@@ -22,7 +23,7 @@ function Invoke-CippTestZTNA21814 {
             $RoleUsers = $RoleMembers | Where-Object { $_.'@odata.type' -eq '#microsoft.graph.user' }
 
             foreach ($RoleMember in $RoleUsers) {
-                $UserDetail = $Users | Where-Object { $_.id -eq $RoleMember.id } | Select-Object -First 1
+                $UserDetail = $UserById.Find($RoleMember.id) | Select-Object -First 1
 
                 if ($UserDetail) {
                     $RoleData.Add([PSCustomObject]@{
@@ -40,15 +41,15 @@ function Invoke-CippTestZTNA21814 {
         $Passed = $SyncedUsers.Count -eq 0
 
         if ($Passed) {
-            $ResultMarkdown = "Validated that standing or eligible privileged accounts are cloud only accounts.`n`n"
+            $ResultMarkdown = [System.Text.StringBuilder]::new("Validated that standing or eligible privileged accounts are cloud only accounts.`n`n")
         } else {
-            $ResultMarkdown = "This tenant has $($SyncedUsers.Count) privileged users that are synced from on-premise.`n`n"
+            $ResultMarkdown = [System.Text.StringBuilder]::new("This tenant has $($SyncedUsers.Count) privileged users that are synced from on-premise.`n`n")
         }
 
         if ($RoleData.Count -gt 0) {
-            $ResultMarkdown += "## Privileged Roles`n`n"
-            $ResultMarkdown += "| Role Name | User | Source | Status |`n"
-            $ResultMarkdown += "| :--- | :--- | :--- | :---: |`n"
+            $null = $ResultMarkdown.Append("## Privileged Roles`n`n")
+            $null = $ResultMarkdown.Append("| Role Name | User | Source | Status |`n")
+            $null = $ResultMarkdown.Append("| :--- | :--- | :--- | :---: |`n")
 
             foreach ($RoleUser in ($RoleData | Sort-Object RoleName, UserDisplayName)) {
                 if ($RoleUser.OnPremisesSyncEnabled) {
@@ -60,7 +61,7 @@ function Invoke-CippTestZTNA21814 {
                 }
 
                 $UserLink = "https://entra.microsoft.com/#view/Microsoft_AAD_UsersAndTenants/UserProfileMenuBlade/~/AdministrativeRole/userId/$($RoleUser.UserId)"
-                $ResultMarkdown += "| $($RoleUser.RoleName) | [$($RoleUser.UserDisplayName)]($UserLink) | $Type | $Status |`n"
+                $null = $ResultMarkdown.Append("| $($RoleUser.RoleName) | [$($RoleUser.UserDisplayName)]($UserLink) | $Type | $Status |`n")
             }
         }
 

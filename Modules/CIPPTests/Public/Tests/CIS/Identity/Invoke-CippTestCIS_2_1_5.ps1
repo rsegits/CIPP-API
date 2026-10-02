@@ -1,11 +1,17 @@
 function Invoke-CippTestCIS_2_1_5 {
     <#
     .SYNOPSIS
-    Tests CIS M365 6.0.1 (2.1.5) - Safe Attachments for SharePoint, OneDrive, and Microsoft Teams SHALL be enabled
+    Tests CIS M365 7.0.0 (2.1.5) - Safe Attachments for SharePoint, OneDrive, and Microsoft Teams SHALL be enabled
     #>
     param($Tenant)
 
     try {
+        
+        if (-not (Test-CIPPStandardLicense -StandardName 'CIS_2_1_5' -TenantFilter $Tenant -Preset DefenderForOffice365 -SkipLog)) {
+            Add-CippTestResult -TenantFilter $Tenant -TestId 'CIS_2_1_5' -TestType 'Identity' -Status 'Unlicensed' -ResultMarkdown 'This tenant is not licensed for Microsoft Defender for Office 365 (ATP). Required capabilities: ATP_ENTERPRISE, ATP_ENTERPRISE_GOV, THREAT_INTELLIGENCE, THREAT_INTELLIGENCE_GOV.' -Risk 'High' -Name 'Safe Attachments policy is enabled' -UserImpact 'Low' -ImplementationEffort 'Low' -Category 'Email Protection'
+            return
+        }
+
         $Atp = Get-CIPPTestData -TenantFilter $Tenant -Type 'ExoAtpPolicyForO365'
 
         if (-not $Atp) {
@@ -20,10 +26,10 @@ function Invoke-CippTestCIS_2_1_5 {
             EnableSafeDocs             = $true
             AllowSafeDocsOpen          = $false
         }
-        $Failures = @()
+        $Failures = [System.Collections.Generic.List[string]]::new()
         foreach ($key in $Required.Keys) {
             if ($Cfg.$key -ne $Required[$key]) {
-                $Failures += "$key = $($Cfg.$key) (expected $($Required[$key]))"
+                $Failures.Add("$key = $($Cfg.$key) (expected $($Required[$key]))")
             }
         }
 

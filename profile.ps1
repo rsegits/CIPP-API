@@ -167,7 +167,7 @@ if (!$LastStartup -or $CurrentVersion -ne $LastStartup.Version) {
             PSVersion    = $PSVersionTable.PSVersion.ToString()
         }
     }
-    Update-AzDataTableEntity @Table -Entity $LastStartup -Force -ErrorAction SilentlyContinue
+    Add-AzDataTableEntity @Table -Entity $LastStartup -Force -ErrorAction SilentlyContinue
     try {
         Clear-CippDurables
     } catch {
@@ -216,7 +216,7 @@ $Timings['Timezone'] = $SwTimezone.Elapsed.TotalMilliseconds
 # Import Extra modules if needed
 $SwExtraModules = [System.Diagnostics.Stopwatch]::StartNew()
 $ModulesPath = Join-Path $env:CIPPRootPath 'Modules'
-$NonHttpModules = @('CIPPStandards', 'CIPPAlerts', 'CIPPTests', 'CIPPDB', 'CIPPActivityTriggers', 'DNSHealth')
+$NonHttpModules = @('CIPPStandards', 'CIPPAlerts', 'CIPPTests', 'CIPPDB', 'CIPPActivityTriggers', 'DNSHealth', 'CippExtensions')
 $HttpModule = @('CIPPHTTP')
 
 $HttpDisabled = $env:AzureWebJobs_CIPPHttpTrigger_Disabled -in @('true', '1') -or [System.Environment]::GetEnvironmentVariable('AzureWebJobs.CIPPHttpTrigger.Disabled') -in @('true', '1')

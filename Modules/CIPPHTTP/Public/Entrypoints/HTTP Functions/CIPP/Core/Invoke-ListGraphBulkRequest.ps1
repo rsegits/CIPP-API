@@ -4,6 +4,8 @@ function Invoke-ListGraphBulkRequest {
         Entrypoint
     .ROLE
         CIPP.Core.Read
+    .DESCRIPTION
+        Executes multiple Microsoft Graph API requests in a single batch call for a given tenant. Accepts an array of request objects in the body.
     #>
     [CmdletBinding()]
     param($Request, $TriggerMetadata)
@@ -35,6 +37,9 @@ function Invoke-ListGraphBulkRequest {
     if ($BulkRequests) {
         $GraphRequestParams.Requests = @($BulkRequests)
         try {
+            foreach ($GraphRequest in $BulkRequests) {
+                Test-CIPPGraphEndpointBlocked -Uri $GraphRequest.url -Throw
+            }
             $Body = New-GraphBulkRequest @GraphRequestParams
             $Results = @{
                 StatusCode = [System.Net.HttpStatusCode]::OK

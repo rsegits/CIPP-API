@@ -9,12 +9,14 @@ function Invoke-CIPPDBCacheCollection {
         compared to individual per-type activities, eliminating replay overhead.
 
         Collection types map to license categories:
-        - Graph:              Core tenant data (no special license needed)
-        - ExchangeConfig:     Exchange Online policy/config data
-        - ExchangeData:       Mailboxes, CAS mailboxes, usage reports
-        - ConditionalAccess:  CA policies and registration details
-        - IdentityProtection: Risky users/SPs, risk detections, PIM
-        - Intune:             Managed devices, policies, app protection
+        - Graph:                Core tenant data (no special license needed)
+        - ExchangeConfig:       Exchange Online policy/config data
+        - ExchangeData:         Mailboxes, CAS mailboxes, usage reports
+        - ConditionalAccess:    CA policies and registration details
+        - IdentityProtection:   Risky users/SPs, risk detections, PIM
+        - Intune:               Managed devices, policies, app protection
+        - DefenderForOffice365: Safe Links/Attachments, ATP, Teams protection (MDO P1/P2)
+        - Defender:             Defender for Endpoint vulnerabilities (TVM/CVE)
 
     .PARAMETER CollectionType
         The group of cache functions to execute
@@ -31,7 +33,7 @@ function Invoke-CIPPDBCacheCollection {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
-        [ValidateSet('Graph', 'ExchangeConfig', 'ExchangeData', 'ConditionalAccess', 'IdentityProtection', 'Intune', 'Compliance', 'CopilotUsage', 'SharePoint', 'Teams')]
+        [ValidateSet('Graph', 'ExchangeConfig', 'ExchangeData', 'ConditionalAccess', 'IdentityProtection', 'Intune', 'Compliance', 'CopilotUsage', 'SharePoint', 'Teams', 'DefenderForOffice365', 'Defender')]
         [string]$CollectionType,
 
         [Parameter(Mandatory = $true)]
@@ -51,13 +53,18 @@ function Invoke-CIPPDBCacheCollection {
             'Devices'
             'Organization'
             'Roles'
+            'RoleDefinitions'
+            'RoleAssignments'
+            'AdministrativeUnits'
             'AdminConsentRequestPolicy'
             'AuthorizationPolicy'
             'AuthenticationMethodsPolicy'
+            'SecurityDefaults'
             'DeviceSettings'
             'DirectoryRecommendations'
             'CrossTenantAccessPolicy'
             'DefaultAppManagementPolicy'
+            'ActivityBasedTimeoutPolicy'
             'Settings'
             'SecureScore'
             'PIMSettings'
@@ -67,39 +74,72 @@ function Invoke-CIPPDBCacheCollection {
             'OAuth2PermissionGrants'
             'AppRoleAssignments'
             'LicenseOverview'
+            'ActiveUserDetail'
+            'M365AppUserDetail'
             'BitlockerKeys'
+            'AdminReportSettings'
+            'PeopleInsights'
+            'Pronouns'
+            'NamePronunciation'
+            'PhotoUpdateSettings'
+            'OrganizationBranding'
+            'HomeRealmDiscoveryPolicy'
+            'MobileDeviceManagementPolicies'
+            'PermissionGrantPolicies'
+            'CopilotAdminSettings'
+            'CopilotPolicySettings'
+            'SelfServicePurchaseProducts'
+            'MoeraDmarc'
+            'DomainAnalyser'
+            'ServiceHealthOverviews'
+            'ServiceHealthIssues'
+            'MessageCenterMessages'
         )
         ExchangeConfig     = @(
             'ExoAntiPhishPolicies'
             'ExoMalwareFilterPolicies'
-            'ExoSafeLinksPolicies'
-            'ExoSafeAttachmentPolicies'
             'ExoTransportRules'
             'ExoDkimSigningConfig'
             'ExoOrganizationConfig'
             'ExoAcceptedDomains'
             'ExoHostedContentFilterPolicy'
             'ExoHostedOutboundSpamFilterPolicy'
-            'ExoAtpPolicyForO365'
             'ExoQuarantinePolicy'
             'ExoRemoteDomain'
             'ExoSharingPolicy'
             'ExoAdminAuditLogConfig'
             'ExoPresetSecurityPolicy'
             'ExoTenantAllowBlockList'
+            'ExoInboundConnector'
+            'ExoProtectionAlert'
             'OwaMailboxPolicy'
             'ReportSubmissionPolicy'
+            'ReportSubmissionRule'
+            'ExoTransportConfig'
+            'ExoHostedConnectionFilterPolicy'
+            'ExoExternalInOutlook'
+            'ExoOutboundConnector'
+            'ExoRoleAssignmentPolicy'
+            'ExoHostedContentFilterRule'
+            'ExoGlobalQuarantinePolicy'
+            'ExoOMEConfiguration'
+            'ExoMailboxPlans'
+            'ExoRetentionPolicyTags'
+            'ExoRetentionPolicies'
+            'ExoDynamicDistributionGroup'
+            'ExoMailContacts'
+            'ExoTenantAllowBlockListSpoofItems'
+            'ExoPhishSimConfig'
         )
         ExchangeData       = @(
             'CASMailboxes'
             'MailboxUsage'
-            'OneDriveUsage'
-            'SharePointSiteUsage'
+            'MailTrafficSummary'
             'OfficeActivations'
+            'HVEAccounts'
         )
         ConditionalAccess  = @(
             'ConditionalAccessPolicies'
-            'CredentialUserRegistrationDetails'
             'UserRegistrationDetails'
         )
         IdentityProtection = @(
@@ -114,14 +154,30 @@ function Invoke-CIPPDBCacheCollection {
         Intune             = @(
             'ManagedDevices'
             'IntunePolicies'
+            'IntuneApplications'
+            'IntuneAssignmentFilters'
+            'IntuneCompliancePolicies'
             'ManagedDeviceEncryptionStates'
             'IntuneAppProtectionPolicies'
-            'DetectedApps'
+            'IntuneScripts'
+            'IntuneReusableSettings'
             'MDEOnboarding'
+            'AutopilotDeploymentProfiles'
+            'DeviceEnrollmentConfigurations'
+            'IntuneDeviceManagementSettings'
+            'IntuneDataProcessorOnboarding'
+            'IntuneBrandingProfile'
+            'ManagedDeviceCleanupRules'
+            'DetectedApps'
+            'IntuneAppInstallStatus'
         )
         Compliance         = @(
             'SensitivityLabels'
             'DlpCompliancePolicies'
+            'ComplianceRetentionPolicies'
+            'ComplianceRetentionRules'
+            'ExoDlpSensitiveInfoTypes'
+            'ExoLabels'
         )
         CopilotUsage       = @(
             'CopilotUsageUserDetail'
@@ -131,7 +187,13 @@ function Invoke-CIPPDBCacheCollection {
         )
         SharePoint         = @(
             'SPOTenant'
+            'SPOSites'
             'SPOTenantSyncClientRestriction'
+            'SharePointAdminSettings'
+            'SharePointSiteUsage'
+            'SharePointUsageReport'
+            'SiteActivity'
+            'OneDriveUsage'
         )
         Teams              = @(
             'CsTeamsMeetingPolicy'
@@ -139,7 +201,21 @@ function Invoke-CIPPDBCacheCollection {
             'CsExternalAccessPolicy'
             'CsTenantFederationConfiguration'
             'CsTeamsMessagingPolicy'
+            'CsTeamsMessagingConfiguration'
             'CsTeamsAppPermissionPolicy'
+            'Teams'
+            'TeamsActivity'
+            'TeamsVoice'
+            'TeamsResourceAccounts'
+        )
+        Defender           = @(
+            'DefenderCVEs'
+        )
+        DefenderForOffice365 = @(
+            'ExoSafeLinksPolicies'
+            'ExoSafeAttachmentPolicies'
+            'ExoAtpPolicyForO365'
+            'ExoTeamsProtectionPolicy'
         )
     }
 
@@ -156,6 +232,14 @@ function Invoke-CIPPDBCacheCollection {
     $Errors = [System.Collections.Generic.List[string]]::new()
     $Timings = [System.Collections.Generic.List[string]]::new()
 
+    if ($CollectionType -eq 'Intune') {
+        # Start the report exports early; DetectedApps and IntuneAppInstallStatus read them last
+        foreach ($ReportName in 'AppInvRawData', 'AppInstallStatusAggregate') {
+            try { $null = Get-CIPPIntuneReportExportJob -TenantFilter $TenantFilter -ReportName $ReportName }
+            catch { Write-Warning "  [$CollectionType] Could not start the $ReportName export for $TenantFilter : $($_.Exception.Message)" }
+        }
+    }
+
     foreach ($CacheType in $CacheTypes) {
         $FullFunctionName = "Set-CIPPDBCache$CacheType"
         $ItemStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
@@ -171,13 +255,13 @@ function Invoke-CIPPDBCacheCollection {
             Write-Information "  [$CollectionType] Collecting $CacheType for $TenantFilter"
             & $FullFunctionName @Params
             $ItemStopwatch.Stop()
-            $ElapsedSeconds = [math]::Round($ItemStopwatch.Elapsed.TotalSeconds, 3)
+            $ElapsedSeconds = '{0:N3}' -f $ItemStopwatch.Elapsed.TotalSeconds
             $Timings.Add("$CacheType : ${ElapsedSeconds}s")
             Write-Information "  [$CollectionType] Completed $CacheType for $TenantFilter - Took ${ElapsedSeconds} seconds"
             $SuccessCount++
         } catch {
             $ItemStopwatch.Stop()
-            $ElapsedSeconds = [math]::Round($ItemStopwatch.Elapsed.TotalSeconds, 3)
+            $ElapsedSeconds = '{0:N3}' -f $ItemStopwatch.Elapsed.TotalSeconds
             $FailedCount++
             $Errors.Add("$CacheType : $($_.Exception.Message)")
             $Timings.Add("$CacheType : ${ElapsedSeconds}s (FAILED)")
@@ -186,7 +270,7 @@ function Invoke-CIPPDBCacheCollection {
     }
 
     $CollectionStopwatch.Stop()
-    $TotalElapsed = [math]::Round($CollectionStopwatch.Elapsed.TotalSeconds, 3)
+    $TotalElapsed = '{0:N3}' -f $CollectionStopwatch.Elapsed.TotalSeconds
     $Summary = "$CollectionType collection for $TenantFilter completed in ${TotalElapsed} seconds - $SuccessCount succeeded, $FailedCount failed out of $($CacheTypes.Count)"
     Write-Information $Summary
     Write-Information "  Timings: $($Timings -join ' | ')"
